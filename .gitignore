@@ -1,0 +1,7 @@
+.orca.toolsrc
+.orca.*
+backup
+examples
+**/.tmp*
+**/tmp.*
+**/core.*
