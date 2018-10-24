@@ -1,0 +1,86 @@
+#%Module1.0#####################################################################
+##
+## ORCA modulefile
+## 
+set module_global_base_path  "/usr/local_rwth/modules/modulefiles/source/"
+
+source "$module_global_base_path/FUNCTIONS/output"
+source "$module_global_base_path/FUNCTIONS/module_management"
+source "$module_global_base_path/FUNCTIONS/usage_log"
+
+set module_base_path         "/home/<user>/local/modules/modulefiles/source/"
+
+set modulename "orca"
+
+set ORCA_ROOT  "/home/<user>/local/orca"
+
+set ORCA_DIR   "${ORCA_ROOT}/orca-${version}"
+
+# this is the help output, printed by "module help"
+proc ModulesHelp { } {
+# define the global variables version and modulename in this function
+  global version
+  global modulename
+  puts stderr "This module initialises the $modulename $version environment."
+  puts stderr "ORCA is an ab inition, DFT, and semiempirical SCF-MO package."
+  puts stderr "See https://orcaforum.cec.mpg.de/ for details."
+  puts stderr "References:"
+  puts stderr "  [1] Neese, F. The ORCA program system."
+  puts stderr "      *WIREs Comput Mol Sci* **2012,** *2* (1), 73–78."
+  puts stderr "      https://doi.org/10.1002/wcms.81"
+  puts stderr "  [2] Neese, F. Software update: the ORCA program system, version 4.0."
+  puts stderr "      *WIREs Comput Mol Sci* **2018,** *8* (1), e1327."
+  puts stderr "      https://doi.org/10.1002/wcms.1327"
+}
+
+# short description (preferably 1 line) what the loaded software does
+# or what the module is good for. printed by "module whatis"
+module-whatis "ORCA is an ab inition, DFT, and semiempirical SCF-MO package."
+
+# if module should be loaded, check for conflicts and print info
+switch [module-info mode] {
+  load {     #is this module already loaded?
+    set conflict "$modulename/$version"
+    if { [is-loaded $conflict]} {
+      m_warning "$conflict already loaded, doing nothing"
+      return
+    }
+    set conflict $modulename 
+    if { [is-loaded $conflict]} {
+      m_error "$conflict already loaded and conflicts with $modulename/$version.\nTry unloading $conflict first"
+      exit
+    }
+    #check if software is really installed, if not error
+    if { ![file isdirectory $ORCA_DIR] } {
+      m_error "This software is not installed on this machine. Please try another one.\n"
+      exit
+    }
+    if { ![is-loaded openmpi/2.0.2] } {
+      m_warning "ORCA requires openmpi-2.0.2"
+      if { [is-loaded openmpi] } {
+        m_warning "Incorrect OpenMPI is already loaded; will unload it."
+        module unload openmpi
+      }
+      module load openmpi/2.0.2
+    }
+    m_success "Loading $modulename $version"
+    m_hint    "Environment variables set $ORCA_DIR, $ORCA_BIN"
+  }
+  unload {
+    m_success "Unloading $modulename $version"
+  }
+}
+
+#define all environment changes here. 
+
+#set needed environment variables
+
+#prepend needed pathes for this software
+prepend-path   PATH       $ORCA_DIR
+setenv         ORCA_DIR   $ORCA_DIR
+setenv         ORCA_BIN   $ORCA_DIR/orca
+
+#ATTENTION
+#do NOT use m_error, m_success, m_warning or puts stderr 
+#outside of an conditional expression!
+#elsewise this will be printed on every load, unload and even whatis command!
