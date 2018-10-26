@@ -24,7 +24,10 @@ versiondate="2018-10-XX"
 # General path to the ORCA directory (this should work on every system)
 orca_installpath="/path/is/not/set"
 # Define where scratch files shall be written to
-orca_scratch="$TEMP"
+# This writes the string '$TEMP' to the submission script, 
+# hence let's the queuing system determine the scratch.
+# (Should be set appropriately in rc.)
+orca_scratch="\$TEMP"
 # Define the overhead you'd like to give ORCA in MB 
 orca_overhead=2000
 #? The 2000 might be a very conservative guess, but additionally

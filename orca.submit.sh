@@ -281,12 +281,12 @@ write_jobscript ()
 		submit_dir="$PWD"
 		
 		cleanup () {
-		  ### NEEDS WORK
+		  # This should only trigger and produce a scratch-remainder if the calculation aborts
 		  echo "Looking for files with filesize zero and delete them in '\$orca_subscratch'."
 		  find "\$orca_subscratch" -type f -size 0 -exec rm -v {} \\;
 		  echo "Deleting scratch '\$orca_subscratch' if empty."
 		  find "\$orca_subscratch" -maxdepth 0 -empty -exec rmdir -v {} \\;
-		  [[ -e "\$orca_subscratch" ]] && mv -v "\$orca_subscratch" "$PWD/${jobname}.scr\$jobid"
+		  [[ -e "\$orca_subscratch" ]] && mv -v "\$orca_subscratch" "\$submit_dir/${jobname}.scr\$jobid"
 		}
 		
 		trap cleanup EXIT SIGTERM
@@ -344,10 +344,15 @@ write_jobscript ()
 		
 		pushd "\$orca_subscratch" || exit 1
 		
-		# Copy the relevant files to the scratch directory
-		cp -v \$submit_dir/$inputfile_modified .
+		# Move the relevant files to the scratch directory
+    echo "Move input file(s) to scratch"
+		mv -v \$submit_dir/$inputfile_modified .
+    find "\$submit_dir" -name ${inputfile_modified%.*}.gbw -exec cp -va {} . \;
 		
 		EOF
+    # Needs to parse the input file find dependent files and copy those back
+    # currently it relies too much on the fact that there might be a file that is needed
+    # this can lead to awful errors ...
 
     # Insert additional environment variables
     if [[ ! -z "$manual_env_var" ]]; then
@@ -360,10 +365,26 @@ write_jobscript ()
 		echo "\"\$ORCA_BIN\" \"$inputfile_modified\" > \"\$submit_dir/$outputfile\""
 		"\$ORCA_BIN" "$inputfile_modified" > "\$submit_dir/$outputfile"
 		joberror=\$?
+    echo "Written '\$( ls "\$submit_dir/$outputfile" )'"
 		echo "End  : \$(date)"
+    echo "Current content of scratch directory:"
+    ls -la
+
+    echo "Remove temporary files if present."
+    find . -name '*.tmp' -exec rm -v {} \;
+    find . -name 'tmp.*' -exec rm -v {} \;
+    echo "Move back remaining files (make backups)."
+    find . -type f -size +0 -exec mv -v --backup=existing {} "\$submit_dir" \;
+
 		popd
+
+    echo "Current content of submit directory:"
+    ls -la
+
 		exit \$joberror
 		EOF
+    # This is very, very conservative thinking to prevent any unnecessary loss of data.
+    #This should be adjusted with more care.
 
     # Close file descriptor
     exec 9>&-
