@@ -150,6 +150,7 @@ process_inputfile ()
     debug "Jobname: $jobname; Input: $inputfile; Output: $outputfile."
 
     read_orca_input_file "$inputfile"
+    debug "Depeneds on $( printf "%s, " "${inputfile_dependon[@]}" )"
     inputfile_modified="$jobname.inp"
     backup_if_exists "$inputfile_modified"
     debug "Writing new input: $inputfile_modified"
@@ -347,9 +348,13 @@ write_jobscript ()
 		# Move the relevant files to the scratch directory
     echo "Move input file(s) to scratch"
 		mv -v \$submit_dir/$inputfile_modified .
-    find "\$submit_dir" -name ${inputfile_modified%.*}.gbw -exec cp -va {} . \;
-		
 		EOF
+    local file
+    for file in "${inputfile_dependon[@]}" ; do
+      debug "Writing for '$file'."
+      echo "cp -va \"$file\" ." >&9
+    done
+
     # Needs to parse the input file find dependent files and copy those back
     # currently it relies too much on the fact that there might be a file that is needed
     # this can lead to awful errors ...
@@ -361,6 +366,7 @@ write_jobscript ()
     fi
 
     cat >&9 <<-EOF
+
 		echo "Start: \$(date)"
 		echo "\"\$ORCA_BIN\" \"$inputfile_modified\" > \"\$submit_dir/$outputfile\""
 		"\$ORCA_BIN" "$inputfile_modified" > "\$submit_dir/$outputfile"
@@ -376,7 +382,7 @@ write_jobscript ()
     echo "Move back remaining files (make backups)."
     find . -type f -size +0 -exec mv -v --backup=existing {} "\$submit_dir" \;
 
-		popd
+		popd || exit 1
 
     echo "Current content of submit directory:"
     ls -la

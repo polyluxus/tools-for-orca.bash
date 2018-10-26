@@ -69,9 +69,16 @@ match_output_file ()
 read_orca_input_file ()
 {
   # Currently a dummy routine to allow further manipulation if necessary
-  local testfile="$1"
+  local testfile="$1" dependfile
   mapfile -t assembled_input < "$testfile"
   assembled_input+=("# Assembled with $softwarename")
+  # Workaround because parsing is not yet implemented:
+  for dependfile in ./*.gbw ; do
+    debug "Found '$dependfile'."
+    [[ "$dependfile" == "*.gbw" ]] && break
+    inputfile_dependon+=( "$dependfile" )
+  done
+  debug "Dependon: ${inputfile_dependon[*]}"
 }
 
 
@@ -209,9 +216,7 @@ extract_jobname_inoutnames ()
       debug "Assuming that '$testfile' is the jobname."
       jobname="$testfile"
       unset testfile
-      debug "Found possible inputfiles: ${test_possible_inputfiles[*]}"
-      (( ${#test_possible_inputfiles[*]} == 0 )) &&  fatal "No input files belonging to '$jobname' found in this directory."
-      for testfile in ./$jobname.* ; do
+      for testfile in ./"${jobname}".* ; do
         debug "Validating: $testfile"
         input_suffix="${testfile##*.}"
         debug "Extracted input suffix '$input_suffix', and will test if allowed."
