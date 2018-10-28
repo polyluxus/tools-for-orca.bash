@@ -146,7 +146,7 @@ process_inputfile ()
 {
     local testfile="$1"
     debug "Processing Input: $testfile"
-    validate_write_in_out_jobname "$testfile"
+    validate_write_in_out_jobname "$testfile" || fatal "Unable to parse '$testfile'"
     debug "Jobname: $jobname; Input: $inputfile; Output: $outputfile."
 
     read_orca_input_file "$inputfile"

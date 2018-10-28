@@ -74,8 +74,8 @@ read_orca_input_file ()
   assembled_input+=("# Assembled with $softwarename")
   # Workaround because parsing is not yet implemented:
   for dependfile in ./*.gbw ; do
-    debug "Found '$dependfile'."
     [[ "$dependfile" == "*.gbw" ]] && break
+    debug "Found '$dependfile'."
     inputfile_dependon+=( "$dependfile" )
   done
   debug "Dependon: ${inputfile_dependon[*]}"
@@ -194,7 +194,7 @@ read_xyz_structure_file ()
 extract_jobname_inoutnames ()
 {
     # Assigns the global variables inputfile outputfile jobname
-    # Checks is locations are read/writeable
+    # Checks its locations are read/writeable
     local testfile="$1"
     local input_suffix output_suffix
     debug "Validating: $testfile"
@@ -211,24 +211,42 @@ extract_jobname_inoutnames ()
         # Abort when input-suffix cannot be identified
         fatal "Unrecognised suffix of inputfile '$testfile'."
       fi
+      outputfile="$jobname.$output_suffix"
+      debug "Jobname: $jobname; Input: $inputfile; Output: $outputfile."
+      return 0
+      # Found everything we need, verified that the input exists
     else
-      # Assume that only jobname was given
-      debug "Assuming that '$testfile' is the jobname."
-      jobname="$testfile"
-      unset testfile
-      for testfile in ./"${jobname}".* ; do
-        debug "Validating: $testfile"
+      debug "Assumed inputfile '$testfile' does not exist/ is not readable."
+    fi
+
+    # If we have not returned yet, assume that only jobname was given
+    debug "Assuming that '$testfile' is the jobname."
+    jobname="$testfile"
+    unset testfile
+    for testfile in "${jobname}".* ; do
+      debug "Validating: $testfile"
+      if inputfile=$(is_readable_file_or_exit "$testfile") ; then
         input_suffix="${testfile##*.}"
         debug "Extracted input suffix '$input_suffix', and will test if allowed."
         if output_suffix=$(match_output_suffix "$input_suffix") ; then
-          debug "Will use input suffix '$input_suffix'."
-          debug "Will use output suffix '$output_suffix'."
-          break
+          outputfile="$jobname.$output_suffix"
+          debug "Jobname: $jobname; Input: $inputfile; Output: $outputfile."
+          debug "With suffixes: (input) $input_suffix; (output) $output_suffix."
+          return 0
+          #Found everything and verified it
+        else
+          debug "Unrecognised suffix ($input_suffix) of found file '$testfile'"
+          continue
+          # Test the next file that was found
         fi
-      done
-      debug "Jobname: $jobname; Input suffix: $input_suffix; Output suffix: $output_suffix."
-    fi
-    outputfile="$jobname.$output_suffix"
+      else
+        debug "Assumed inputfile '$testfile' does not exist/ is not readable."
+      fi
+      debug "Tested '$testfile' is no inputfile."
+    done
+
+    # If we are here, we did not find any file usable as input.
+    fatal "Unable to find inputfile associated with '$jobname'."
 }
 
 validate_write_in_out_jobname ()
@@ -236,7 +254,7 @@ validate_write_in_out_jobname ()
     # Assigns the global variables inputfile outputfile jobname
     # Checks is locations are read/writeable
     local testfile="$1"
-    extract_jobname_inoutnames "$testfile"
+    extract_jobname_inoutnames "$testfile" || return 1
 
     # Check special ending of input file which is hard coded in the main script
     debug "inputfile=$inputfile" 
