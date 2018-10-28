@@ -346,12 +346,12 @@ write_jobscript ()
 		
 		# Move the relevant files to the scratch directory
 		echo "Move input file(s) to scratch"
-		mv -v \$submit_dir/$inputfile_modified .
+		mv -v "\$submit_dir/$inputfile_modified" .
 		EOF
     local file
     for file in "${inputfile_dependon[@]}" ; do
       debug "Writing for '$file'."
-      echo "cp -va \"$file\" ." >&9
+      echo "cp -va \"\$submit_dir/$file\" ." >&9
     done
 
     # Needs to parse the input file find dependent files and copy those back

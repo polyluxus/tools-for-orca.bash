@@ -73,7 +73,7 @@ read_orca_input_file ()
   mapfile -t assembled_input < "$testfile"
   assembled_input+=("# Assembled with $softwarename")
   # Workaround because parsing is not yet implemented:
-  for dependfile in ./*.gbw ; do
+  for dependfile in *.gbw ; do
     [[ "$dependfile" == "*.gbw" ]] && break
     debug "Found '$dependfile'."
     inputfile_dependon+=( "$dependfile" )
