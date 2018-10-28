@@ -338,15 +338,14 @@ write_jobscript ()
 		# Get some information o the platform
 		echo "This is \$(uname -n)"
 		echo "OS \$(uname -o) (\$(uname -p))"
-		echo "Running on $requested_numCPU \
-		      \$(grep 'model name' /proc/cpuinfo|uniq|cut -d ':' -f 2)."
+		echo "Running on $requested_numCPU \$(grep 'model name' /proc/cpuinfo|uniq|cut -d ':' -f 2)."
 		echo "Calculation $inputfile_modified from \$submit_dir."
 		echo "Working directry is \$orca_subscratch"
 		
 		pushd "\$orca_subscratch" || exit 1
 		
 		# Move the relevant files to the scratch directory
-    echo "Move input file(s) to scratch"
+		echo "Move input file(s) to scratch"
 		mv -v \$submit_dir/$inputfile_modified .
 		EOF
     local file
@@ -371,22 +370,22 @@ write_jobscript ()
 		echo "\"\$ORCA_BIN\" \"$inputfile_modified\" > \"\$submit_dir/$outputfile\""
 		"\$ORCA_BIN" "$inputfile_modified" > "\$submit_dir/$outputfile"
 		joberror=\$?
-    echo "Written '\$( ls "\$submit_dir/$outputfile" )'"
+		echo "Written '\$( ls "\$submit_dir/$outputfile" )'"
 		echo "End  : \$(date)"
-    echo "Current content of scratch directory:"
-    ls -la
-
-    echo "Remove temporary files if present."
-    find . -name '*.tmp' -exec rm -v {} \;
-    find . -name 'tmp.*' -exec rm -v {} \;
-    echo "Move back remaining files (make backups)."
-    find . -type f -size +0 -exec mv -v --backup=existing {} "\$submit_dir" \;
-
+		echo "Current content of scratch directory:"
+		ls -la
+		
+		echo "Remove temporary files if present."
+		find . -name '*.tmp' -exec rm -v {} \;
+		find . -name 'tmp.*' -exec rm -v {} \;
+		echo "Move back remaining files (make backups)."
+		find . -type f -size +0 -exec mv -v --backup=existing {} "\$submit_dir" \;
+		
 		popd || exit 1
-
-    echo "Current content of submit directory:"
-    ls -la
-
+		
+		echo "Current content of submit directory:"
+		ls -la
+		
 		exit \$joberror
 		EOF
     # This is very, very conservative thinking to prevent any unnecessary loss of data.
