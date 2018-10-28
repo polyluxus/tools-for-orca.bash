@@ -76,6 +76,9 @@ read_orca_input_file ()
   mapfile -t read_input < "$testfile"
   
   local testinputline testinputline_index
+  local memory_set="false" nprocs_set="false"
+  local memory_per_processor
+  memory_per_processor=$(( requested_memory / requested_numCPU ))
   for testinputline_index in "${!read_input[@]}" ; do
     testinputline="${read_input[testinputline_index]}"
     debug "Index: $testinputline_index; Parsing: '$testinputline'."
@@ -88,6 +91,14 @@ read_orca_input_file ()
         debug "New line: $testinputline"
         read_input[$testinputline_index]="$testinputline"
       fi
+    elif [[ "$testinputline" =~ ^[[:space:]]*(%[Mm][Aa][Xx][Cc][Oo][Rr][Ee].*)$ ]] ; then
+      debug "Memory specification: $testinputline"
+      read_input[$testinputline_index]="%maxcore $memory_per_processor"
+      message "Applied '${read_input[testinputline_index]}' to inputfile."
+      memory_set="true"
+    elif [[ "$testinputline" =~ ^[[:space:]]*(%.*)$ ]] ; then
+      #Remove the pal block here (last one will be used so this is not critical)
+      debug "Block input: $testinputline"
     else
       debug "Not simple input: $testinputline"
     fi
@@ -101,6 +112,14 @@ read_orca_input_file ()
   done
   debug "Dependon: ${inputfile_dependon[*]}"
   assembled_input+=( "${read_input[@]}" )
+  if [[ "$memory_set" == "false" ]] ; then 
+    assembled_input+=( "%maxcore $memory_per_processor" )
+    message "Applied '${assembled_input[-1]}' to input file."
+  fi
+  if [[ "$nprocs_set" == "false" ]] ; then 
+    assembled_input+=( "%pal nprocs $requested_numCPU end" )
+    message "Applied '${assembled_input[-1]}' to input file."
+  fi
 }
 
 remove_any_keyword ()
