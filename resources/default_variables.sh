@@ -13,7 +13,7 @@ fi
 # Generic details about these tools 
 #
 softwarename="tools-for-orca.bash"
-version="0.0.1.dev"
+version="0.0.2.dev"
 versiondate="2018-10-XX"
 
 #
