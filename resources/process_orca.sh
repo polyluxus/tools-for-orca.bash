@@ -82,16 +82,24 @@ read_orca_input_file ()
   for testinputline_index in "${!read_input[@]}" ; do
     testinputline="${read_input[testinputline_index]}"
     debug "Index: $testinputline_index; Parsing: '$testinputline'."
+    local pattern_comment="^[[:space:]]*#.*$"
+    if [[ "$testinputline" =~ $pattern_comment ]] ; then
+      # This is a comment, don't do anything with this line
+      # Also skip further analysis
+      continue
+    fi
     # Insert parsing functions here
     if [[ "$testinputline" =~ ^[[:space:]]*(!.*)$ ]] ; then
       testinputline="${BASH_REMATCH[1]}"
       debug "Simple input: $testinputline"
       if testinputline=$(remove_pal_keyword "$testinputline" ) ; then
         debug "Found and removed PALX keyword."
-        debug "New line: $testinputline"
+        debug "Modified line: $testinputline"
         read_input[$testinputline_index]="$testinputline"
       fi
     elif [[ "$testinputline" =~ ^[[:space:]]*(%[Mm][Aa][Xx][Cc][Oo][Rr][Ee].*)$ ]] ; then
+      # %base must also be recognised
+      # %moinp must be recognised
       debug "Memory specification: $testinputline"
       read_input[$testinputline_index]="%maxcore $memory_per_processor"
       message "Applied '${read_input[testinputline_index]}' to inputfile."
