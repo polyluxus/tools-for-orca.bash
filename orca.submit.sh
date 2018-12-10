@@ -185,10 +185,11 @@ write_jobscript ()
     exec 9> "$submitscript"
 
     local scale_memory_percent overhead_memory
-    # Add one more process, and give ORCA some more space (define in rc)
-    scale_memory_percent=$(( 100 * ( requested_numCPU + 1 ) / requested_numCPU ))
+    # Give ORCA some more space by default (define in rc), 
+    # scale everything up, so that orca uses max 75% of memory
+    scale_memory_percent=$(( 75 ))
     debug "Scaling memory by $scale_memory_percent% (requested_numCPU=$requested_numCPU)."
-    overhead_memory=$(( requested_memory * scale_memory_percent / 100 + orca_overhead ))
+    overhead_memory=$(( (requested_memory + orca_overhead) * 100 / scale_memory_percent ))
     debug "requested_memory=$requested_memory; orca_overhead=$orca_overhead"
     message "Request a total memory of $overhead_memory MB, including overhead for ORCA."
 
