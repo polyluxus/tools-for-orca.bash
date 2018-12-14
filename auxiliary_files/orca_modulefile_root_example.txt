@@ -2,6 +2,8 @@
 ##
 ## ORCA modulefile
 ## 
+
+# From the RWTH cluster, where the modules are stored (necessary for the functions)
 set module_global_base_path  "/usr/local_rwth/modules/modulefiles/source/"
 
 source "$module_global_base_path/FUNCTIONS/output"
@@ -55,16 +57,17 @@ switch [module-info mode] {
       m_error "This software is not installed on this machine. Please try another one.\n"
       exit
     }
-    if { ![is-loaded openmpi/2.0.2] } {
-      m_warning "ORCA requires openmpi-2.0.2"
-      if { [is-loaded openmpi] } {
-        m_warning "Incorrect OpenMPI is already loaded; will unload it."
-        module unload openmpi
-      }
-      module load openmpi/2.0.2
-    }
+### Moved to individual files versions, because dependencies are different
+##    if { ![is-loaded openmpi/2.0.2] } {
+##      m_warning "ORCA requires openmpi-2.0.2"
+##      if { [is-loaded openmpi] } {
+##        m_warning "Incorrect OpenMPI is already loaded; will unload it."
+##        module unload openmpi
+##      }
+##      module load openmpi/2.0.2
+##    }
     m_success "Loading $modulename $version"
-    m_hint    "Environment variables set $ORCA_DIR, $ORCA_BIN"
+    m_hint    "Environment variables set ORCA_DIR, ORCA_BIN"
   }
   unload {
     m_success "Unloading $modulename $version"
