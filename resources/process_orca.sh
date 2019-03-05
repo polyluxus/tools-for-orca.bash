@@ -68,10 +68,50 @@ match_output_file ()
 
 read_orca_input_file ()
 {
+  # Start with saying what we did.
+  assembled_input=( "# Assembled with $softwarename" )
   # Currently a dummy routine to allow further manipulation if necessary
   local testfile="$1" dependfile
-  mapfile -t assembled_input < "$testfile"
-  assembled_input+=("# Assembled with $softwarename")
+  local -a read_input 
+  mapfile -t read_input < "$testfile"
+  
+  local testinputline testinputline_index
+  local memory_set="false" nprocs_set="false"
+  local memory_per_processor
+  memory_per_processor=$(( requested_memory / requested_numCPU ))
+  for testinputline_index in "${!read_input[@]}" ; do
+    testinputline="${read_input[testinputline_index]}"
+    debug "Index: $testinputline_index; Parsing: '$testinputline'."
+    local pattern_comment="^[[:space:]]*#.*$"
+    if [[ "$testinputline" =~ $pattern_comment ]] ; then
+      # This is a comment, don't do anything with this line
+      # Also skip further analysis
+      continue
+    fi
+    # Insert parsing functions here
+    if [[ "$testinputline" =~ ^[[:space:]]*(!.*)$ ]] ; then
+      testinputline="${BASH_REMATCH[1]}"
+      debug "Simple input: $testinputline"
+      if testinputline=$(remove_pal_keyword "$testinputline" ) ; then
+        debug "Found and removed PALX keyword."
+        debug "Modified line: $testinputline"
+        read_input[$testinputline_index]="$testinputline"
+      fi
+    elif [[ "$testinputline" =~ ^[[:space:]]*(%[Mm][Aa][Xx][Cc][Oo][Rr][Ee].*)$ ]] ; then
+      # %base must also be recognised
+      # %moinp must be recognised
+      debug "Memory specification: $testinputline"
+      read_input[$testinputline_index]="%maxcore $memory_per_processor"
+      message "Applied '${read_input[testinputline_index]}' to inputfile."
+      memory_set="true"
+    elif [[ "$testinputline" =~ ^[[:space:]]*(%.*)$ ]] ; then
+      #Remove the pal block here (last one will be used so this is not critical)
+      debug "Block input: $testinputline"
+    else
+      debug "Not simple input: $testinputline"
+    fi
+  done
+
   # Workaround because parsing is not yet implemented:
   for dependfile in *.gbw ; do
     [[ "$dependfile" == "*.gbw" ]] && break
@@ -79,8 +119,55 @@ read_orca_input_file ()
     inputfile_dependon+=( "$dependfile" )
   done
   debug "Dependon: ${inputfile_dependon[*]}"
+  assembled_input+=( "${read_input[@]}" )
+  if [[ "$memory_set" == "false" ]] ; then 
+    assembled_input+=( "%maxcore $memory_per_processor" )
+    message "Applied '${assembled_input[-1]}' to input file."
+  fi
+  if [[ "$nprocs_set" == "false" ]] ; then 
+    assembled_input+=( "%pal nprocs $requested_numCPU end" )
+    message "Applied '${assembled_input[-1]}' to input file."
+  fi
 }
 
+remove_any_keyword ()
+{
+  local teststring="$1"
+  local pattern="^(.*)($2)(.*)$"
+  local removed_string return_string
+  if [[ "$teststring" =~ $pattern ]] ; then
+    debug "Matches: ${BASH_REMATCH[1]}; ${BASH_REMATCH[2]}; ${BASH_REMATCH[3]}"
+    removed_string="${BASH_REMATCH[2]}"
+    return_string="${BASH_REMATCH[1]} ${BASH_REMATCH[3]}"
+    message "Removed '$removed_string' from input line."
+    debug "return: $return_string"
+    echo "$return_string"
+    return 0
+  else
+    echo "$teststring"
+    return 1
+  fi
+}
+
+remove_pal_keyword ()
+{
+  local teststring="$1"
+  local pattern="[Pp][Aa][Ll][[:digit:]]"
+  remove_any_keyword "$teststring" "$pattern" || return 1
+}
+
+parse_input_block_pal ()
+{ 
+  local teststring="$1"
+  local pattern="%[Pp][Aa][Ll]"
+  if [[ "$teststring" =~ $pattern ]] ; then
+    debug "Found pattern in '$teststring'."
+    return 0
+  else
+    debug "Not included."
+    retrun 1
+  fi
+}
 
 # 
 # Routines for parsing some input
