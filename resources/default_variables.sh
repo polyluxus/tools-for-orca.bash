@@ -13,8 +13,8 @@ fi
 # Generic details about these tools 
 #
 softwarename="tools-for-orca.bash"
-version="0.0.2.dev"
-versiondate="2018-10-XX"
+version="0.0.3.alpha"
+versiondate="2019-03-05"
 
 #
 # Standard commands for external software:
