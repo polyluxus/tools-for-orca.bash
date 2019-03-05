@@ -81,7 +81,7 @@ get_absolute_dirname ()
 
 get_scriptpath_and_source_files ()
 {
-    local error_count tmplog line tmpmsg
+    local error_count tmplog line
     tmplog=$(mktemp tmp.XXXXXXXX) 
     # Who are we and where are we?
     scriptname="$(get_absolute_filename "${BASH_SOURCE[0]}" "installname")"
@@ -129,12 +129,10 @@ get_scriptpath_and_source_files ()
       while read -r line || [[ -n "$line" ]] ; do
         debug "$line"
       done < "$tmplog"
-      tmpmsg=$(rm -v "$tmplog")
-      debug "$tmpmsg"
+      debug "$(rm -v -- "$tmplog")"
       exit 1
     else
-      tmpmsg=$(rm -v "$tmplog")
-      debug "$tmpmsg"
+      debug "$(rm -v -- "$tmplog")"
     fi
 }
 
@@ -150,7 +148,7 @@ process_inputfile ()
     debug "Jobname: $jobname; Input: $inputfile; Output: $outputfile."
 
     read_orca_input_file "$inputfile"
-    debug "Depeneds on $( printf "%s, " "${inputfile_dependon[@]}" )"
+    debug "Depends on $( printf "%s, " "${inputfile_dependon[@]}" )"
     inputfile_modified="$jobname.inp"
     backup_if_exists "$inputfile_modified"
     debug "Writing new input: $inputfile_modified"
@@ -188,16 +186,17 @@ write_jobscript ()
     # Give ORCA some more space by default (define in rc), 
     # scale everything up, so that orca uses max 75% of memory
     scale_memory_percent=$(( 75 ))
-    debug "Scaling memory by $scale_memory_percent% (requested_numCPU=$requested_numCPU)."
+    debug "Scaling memory by ${scale_memory_percent}% (requested_numCPU=${requested_numCPU})."
     overhead_memory=$(( (requested_memory + orca_overhead) * 100 / scale_memory_percent ))
     debug "requested_memory=$requested_memory; orca_overhead=$orca_overhead"
     message "Request a total memory of $overhead_memory MB, including overhead for ORCA."
 
+    # Write the shebang and a origin message
+    echo "#!/usr/bin/env bash" >&9
+    echo "# Submission script automatically created with $scriptname ($version, $versiondate)" >&9
+
     # Header is different for the queueing systems
     if [[ "$queue" =~ [Pp][Bb][Ss] ]] ; then
-      echo "#!/bin/bash" >&9
-      echo "# Submission script automatically created with $scriptname" >&9
-
       cat >&9 <<-EOF
 			#PBS -l nodes=1:ppn=$requested_numCPU
 			#PBS -l mem=${overhead_memory}m
@@ -207,7 +206,7 @@ write_jobscript ()
 			#PBS -o $submitscript.o\${PBS_JOBID%%.*}
 			#PBS -e $submitscript.e\${PBS_JOBID%%.*}
 			EOF
-      if [[ ! -z $dependency ]] ; then
+      if [[ -n $dependency ]] ; then
         # Dependency is stored in the form ':jobid:jobid:jobid' 
         # which should be recognised by PBS
         echo "#PBS -W depend=afterok$dependency" >&9
@@ -215,12 +214,8 @@ write_jobscript ()
       echo "jobid=\"\${PBS_JOBID%%.*}\"" >&9
 
     elif [[ "$queue" =~ [Bb][Ss][Uu][Bb] ]] ; then
-      echo "#!/usr/bin/env bash" >&9
-      echo "# Submission script automatically created with $scriptname" >&9
-
       cat >&9 <<-EOF
 			#BSUB -n $requested_numCPU
-			#BSUB -a openmp
 			#BSUB -M $overhead_memory
 			#BSUB -W ${requested_walltime%:*}
 			#BSUB -J ${jobname}
@@ -228,7 +223,7 @@ write_jobscript ()
 			#BSUB -o $submitscript.o%J
 			#BSUB -e $submitscript.e%J
 			EOF
-      if [[ ! -z $dependency ]] ; then
+      if [[ -n $dependency ]] ; then
         # Dependency is stored in the form ':jobid:jobid:jobid' (PBS)
         # and needs to be transformed to LSF compatible format
         debug "Resolving dependencies from '$dependency'"
@@ -249,6 +244,7 @@ write_jobscript ()
       # Possibly an RWTH cluster specific setting
       if [[ "$queue" =~ [Rr][Ww][Tt][Hh] && "$PWD" =~ [Hh][Pp][Cc] ]] ; then
         echo "#BSUB -R select[hpcwork]" >&9
+			  echo "#BSUB -a openmp" >&9
       fi
       if [[ "$bsub_project" =~ ^(|0|[Dd][Ee][Ff][Aa]?[Uu]?[Ll]?[Tt]?)$ ]] ; then
         if [[ "$queue" =~ [Rr][Ww][Tt][Hh] ]] ; then
@@ -272,12 +268,22 @@ write_jobscript ()
 
     echo "" >&9
 
-    # Inistialise variables, insert cleanup procedure, trap cleanup
+    # Initialise variables, insert cleanup procedure, trap cleanup
+    local tempdir_pattern='^(|[Tt][Ee]?[Mm][Pp]([Dd][Ii][Rr])?|0|[Dd][Ee][Ff][Aa]?[Uu]?[Ll]?[Tt]?)$'
+    debug "orca_scratch='$orca_scratch'; pattern: $tempdir_pattern"
+    if [[ "$orca_scratch" =~ $tempdir_pattern ]] ; then
+      debug "Pattern was found."
+      #shellcheck disable=SC2016
+      orca_scratch='$( mktemp --directory --tmpdir )'
+    else
+      debug "Pattern was not found."
+    fi
 
     cat >&9 <<-EOF
 		# Make a new scratch directory
-		orca_subscratch="$orca_scratch/orcajob\$jobid"
-		mkdir -vp "\$orca_subscratch"
+		orca_basescratch="$orca_scratch"
+		orca_subscratch="$orca_basescratch/orcajob\$jobid"
+		mkdir -vp "\$orca_subscratch" || { echo "Failed to create scratch directory" >&2 ; exit 1 ; }
 		
 		# Save the current directory
 		submit_dir="$PWD"
@@ -360,7 +366,7 @@ write_jobscript ()
     # this can lead to awful errors ...
 
     # Insert additional environment variables
-    if [[ ! -z "$manual_env_var" ]]; then
+    if [[ -n "$manual_env_var" ]]; then
       echo "export $manual_env_var" >&9
       debug "export $manual_env_var"
     fi
@@ -369,6 +375,8 @@ write_jobscript ()
 
 		echo "Start: \$(date)"
 		echo "\"\$ORCA_BIN\" \"$inputfile_modified\" > \"\$submit_dir/$outputfile\""
+		# Verify orca executable
+		command -v "\$ORCA_BIN" || { echo "Command not found: \$ORCA_BIN" ; exit 1 ; }
 		"\$ORCA_BIN" "$inputfile_modified" > "\$submit_dir/$outputfile"
 		joberror=\$?
 		echo "Written '\$( ls "\$submit_dir/$outputfile" )'"
@@ -377,10 +385,10 @@ write_jobscript ()
 		ls -la
 		
 		echo "Remove temporary files if present."
-		find . -name '*.tmp' -exec rm -v {} \;
-		find . -name 'tmp.*' -exec rm -v {} \;
+		find . -name '*.tmp' -exec rm -v {} \\;
+		find . -name 'tmp.*' -exec rm -v {} \\;
 		echo "Move back remaining files (make backups)."
-		find . -type f -size +0 -exec mv -v --backup=existing {} "\$submit_dir" \;
+		find . -type f -size +0 -exec mv -v --backup=existing {} "\$submit_dir" \\;
 		
 		popd || exit 1
 		
@@ -652,7 +660,7 @@ get_scriptpath_and_source_files || exit 1
 
 # Check for settings in three default locations (increasing priority):
 #   install path of the script, user's home directory, current directory
-orca_tools_rc_loc="$(get_rc "$scriptpath" "/home/$USER" "$PWD")"
+orca_tools_rc_loc="$(get_rc "$scriptpath" "/home/$USER" "/home/$USER/.config" "$PWD")"
 debug "orca_tools_rc_loc=$orca_tools_rc_loc"
 
 # Load custom settings from the rc

@@ -10,14 +10,14 @@
 # General path to the ORCA directory (this should work on every system)
 orca_installpath="/path/is/not/set"
 # Define where scratch files shall be written to
-# The input '\$TEMP' writes the string '$TEMP' to the submission script, 
+# The input 'default' writes a 'mktemp' command to the submission script, 
 # hence let's the queuing system determine the scratch.
 # Set a fixed location here:
-orca_scratch="$TEMP"
+orca_scratch="default"
 # Define the overhead you'd like to give ORCA in MB 
 orca_overhead=2000
 #? The 2000 might be a very conservative guess, but additionally
-#? the memory will be scaled by (CPU + 1)/CPU (at least in the submit script).
+#? the memory will be scaled by 75% to not exceed memory.
 #?
 # If a modular software management is available, use it?
 load_modules="true"
