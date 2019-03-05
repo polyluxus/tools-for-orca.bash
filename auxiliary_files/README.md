@@ -9,3 +9,5 @@ which is provided the version file(s).
 
 After editing these files, put them somewhere on your `MODULEPATH` so that they can be found.
 
+More information can also be found in 
+[rwth-tools/modules](https://github.com/polyluxus/rwth-tools/tree/master/modules)

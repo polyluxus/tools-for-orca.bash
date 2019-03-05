@@ -11,14 +11,16 @@ set USERHOME "$::env(HOME)"
 set module_base_path "${USERHOME}/local/modules/modulefiles/source/"
 
 set MAJORVERSION "4"
-set MINORVERSION "0"
+set MINORVERSION "1"
 set REVISION     "1"
-set PATCHLEVEL   "2"
+# Patchlevel only for the future
+# set PATCHLEVEL   "0"
+# set version "$MAJORVERSION.$MINORVERSION.$REVISION.$PATCHLEVEL"
 
-set version "$MAJORVERSION.$MINORVERSION.$REVISION.$PATCHLEVEL"
+set version "$MAJORVERSION.$MINORVERSION.$REVISION"
 
-if { ![is-loaded openmpi/2.0.2] } {
-  m_warning "ORCA requires openmpi-2.0.2"
+if { ![is-loaded openmpi/3.1.3] } {
+  m_warning "ORCA requires openmpi-3.1.3"
   if { [is-loaded openmpi] } {
     m_warning "Incorrect OpenMPI is already loaded; will unload it."
     module unload openmpi
@@ -31,5 +33,4 @@ if { ![is-loaded openmpi/2.0.2] } {
 }
 
 source "$module_base_path/orca/orca"
-
 
