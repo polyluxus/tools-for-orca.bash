@@ -450,6 +450,8 @@ submit_jobscript_hold ()
         Use 'qrls $submit_id' to release the job."
     elif [[ "$queue" =~ [Bb][Ss][Uu][Bb] ]] ; then
       submit_message="$(bsub -H < "$submitscript" 2>&1 )" || exit_status="$?"
+    elif [[ "$queue" =~ [Ss][Ll][Uu][Rr][Mm] ]] ; then
+      submit_message="$( sbatch -H "$submitscript" 2>&1 )" || exit_status="$?"
     fi
     (( exit_status > 0 )) && warning "Submission went wrong."
     message "$submit_message"
@@ -467,6 +469,8 @@ submit_jobscript_keep ()
       message "  qsub $submitscript"
     elif [[ "$queue" =~ [Bb][Ss][Uu][Bb] ]] ; then
       message "  bsub < $submitscript"
+    elif [[ "$queue" =~ [Ss][Ll][Uu][Rr][Mm] ]] ; then
+      message "sbatch $submitscript"
     fi
     message "to start the job."
 }
@@ -476,9 +480,11 @@ submit_jobscript_run  ()
     local queue="$1" submit_message
     debug "queue=$queue; submitscript=$submitscript"
     if [[ "$queue" =~ [Pp][Bb][Ss] ]] ; then
-      submit_message="Submitted as $(qsub "$submitscript")" || exit_status="$?"
+      submit_message="Submitted as $( qsub "$submitscript" )" || exit_status="$?"
     elif [[ "$queue" =~ [Bb][Ss][Uu][Bb] ]] ; then
-      submit_message="$(bsub < "$submitscript" 2>&1 )" || exit_status="$?"
+      submit_message="$( bsub < "$submitscript" 2>&1 )" || exit_status="$?"
+    elif [[ "$queue" =~ [Ss][Ll][Uu][Rr][Mm] ]] ; then
+      submit_message="$( sbatch "$submitscript" 2>&1 )" || exit_status="$?"
     else
       fatal "Unrecognised queueing system '$queue'."
     fi
