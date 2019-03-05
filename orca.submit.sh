@@ -268,8 +268,7 @@ write_jobscript ()
 			#SBATCH --output='$submitscript.o%j'
 			#SBATCH --error='$submitscript.e%j'
 			#SBATCH --nodes=1 
-			#SBATCH --ntasks=1
-			#SBATCH --cpus-per-task=$requested_numCPU
+			#SBATCH --ntasks=$requested_numCPU
 			#SBATCH --mem-per-cpu=$(( overhead_memory / requested_numCPU ))
 			#SBATCH --time=${requested_walltime}
 			#SBATCH --mail-type=END,FAIL
@@ -316,7 +315,7 @@ write_jobscript ()
     cat >&9 <<-EOF
 		# Make a new scratch directory
 		orca_basescratch="$orca_scratch"
-		orca_subscratch="$orca_basescratch/orcajob\$jobid"
+		orca_subscratch="\$orca_basescratch/orcajob\$jobid"
 		mkdir -vp "\$orca_subscratch" || { echo "Failed to create scratch directory" >&2 ; exit 1 ; }
 		
 		# Save the current directory
@@ -592,7 +591,7 @@ process_options ()
                dependency="$dependency:$OPTARG"
                ;;
 
-          #hlp     -H       submit the job with status hold (PBS) or PSUSP (BSUB)
+          #hlp     -H       submit the job with status hold (PBS, SLURM) or PSUSP (BSUB)
           #hlp
             H) 
                requested_submit_status="hold"
@@ -612,18 +611,15 @@ process_options ()
             q) warning "The submission to a specific queue is not yet possible." ;;
 
           #hlp     -Q <ARG> Which type of job script should be produced.
-          #hlp              Arguments currently implemented: pbs-gen, bsub-rwth
+          #hlp              Arguments currently implemented: pbs-gen, slurm-gen, slurm-rwth, bsub-gen, bsub-rwth
           #hlp
             Q) request_qsys="$OPTARG" ;;
 
-          #hlp     -P <ARG> Account to project.
-          #hlp              This is a BSUB specific setting, it therefore also
-          #hlp              automatically selects '-Q bsub-rwth' and remote execution.
+          #hlp     -P <ARG> Account (SLURM) or Project (BSUB) for statistics.
           #hlp              If the argument is 'default', '0', or '', it reverts to system settings.
           #hlp
             P) 
-               bsub_project="$OPTARG"
-               request_qsys="bsub-rwth"  
+               qsys_project="$OPTARG"
                ;;
 
           #hlp     -u <ARG> Set user email address. This is also a BSUB specific setting.
@@ -631,7 +627,7 @@ process_options ()
           #hlp              If the argument is 'default', '0', or '', it reverts to system settings.
           #hlp
             u) 
-               bsub_email=$(validate_email "$OPTARG")
+               user_email=$(validate_email "$OPTARG")
                ;;
 
           #hlp     -s       Suppress logging messages of the script.
