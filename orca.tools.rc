@@ -61,9 +61,9 @@ requested_numCPU=4
 # TODO: Limits disk space, not usre if avail for ORCA
 requested_maxdisk=10000
 # Account to project (currently only for bsub-rwth)
-bsub_project=default
+qsys_project=default
 # E-Mail address to send notifications to
-bsub_email=default
+user_email=default
 # Calculations will be submitted to run (hold/keep)
 requested_submit_status="run"
 

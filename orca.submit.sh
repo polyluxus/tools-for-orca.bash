@@ -242,26 +242,60 @@ write_jobscript ()
         echo "#BSUB -w \"$resolve_dependency\"" >&9
       fi
       # Possibly an RWTH cluster specific setting
-      if [[ "$queue" =~ [Rr][Ww][Tt][Hh] && "$PWD" =~ [Hh][Pp][Cc] ]] ; then
-        echo "#BSUB -R select[hpcwork]" >&9
+      if [[ "$queue" =~ [Rr][Ww][Tt][Hh] ]] ; then 
 			  echo "#BSUB -a openmp" >&9
-      fi
-      if [[ "$bsub_project" =~ ^(|0|[Dd][Ee][Ff][Aa]?[Uu]?[Ll]?[Tt]?)$ ]] ; then
-        if [[ "$queue" =~ [Rr][Ww][Tt][Hh] ]] ; then
+        if [[ "$PWD" =~ [Hh][Pp][Cc] ]] ; then
+          echo "#BSUB -R select[hpcwork]" >&9
+        fi
+        if [[ "$qsys_project" =~ ^(|0|[Dd][Ee][Ff][Aa]?[Uu]?[Ll]?[Tt]?)$ ]] ; then
           warning "No project selected."
         else
-          message "No project selected."
+          echo "#BSUB -P $qsys_project" >&9
         fi
-      else
-        echo "#BSUB -P $bsub_project" >&9
       fi
-      if [[ "$bsub_email" =~ ^(|0|[Dd][Ee][Ff][Aa]?[Uu]?[Ll]?[Tt]?)$ ]] ; then
+
+      if [[ "$user_email" =~ ^(|0|[Dd][Ee][Ff][Aa]?[Uu]?[Ll]?[Tt]?)$ ]] ; then
         message "No email address given, notifications will be sent to system default."
       else
-        echo "#BSUB -u $bsub_email" >&9
+        echo "#BSUB -u $user_email" >&9
       fi
       echo "jobid=\"\${LSB_JOBID}\"" >&9
 
+    elif [[ "$queue" =~ [Ss][Ll][Uu][Rr][Mm] ]] ; then
+      warning "This is still in preparation"
+      cat >&9 <<-EOF
+			#SBATCH --job-name='${jobname}'
+			#SBATCH --output='$submitscript.o%j'
+			#SBATCH --error='$submitscript.e%j'
+			#SBATCH --nodes=1 
+			#SBATCH --ntasks=1
+			#SBATCH --cpus-per-task=$requested_numCPU
+			#SBATCH --mem-per-cpu=$(( overhead_memory / requested_numCPU ))
+			#SBATCH --time=${requested_walltime}
+			#SBATCH --mail-type=END,FAIL
+			EOF
+      if [[ "$qsys_project" =~ ^(|0|[Dd][Ee][Ff][Aa]?[Uu]?[Ll]?[Tt]?)$ ]] ; then
+        warning "No project selected."
+      else
+        echo "#SBATCH --account='$qsys_project'" >&9
+      fi
+      if [[ -n "$dependency" ]] ; then
+        # Dependency is stored in the form ':jobid:jobid:jobid' 
+        # which should be recognised by SLURM (like PBS)
+        echo "#SBATCH --depend=afterok$dependency" >&9
+      fi
+      if [[ "$queue" =~ [Rr][Ww][Tt][Hh] ]] ; then
+        if [[ "$PWD" =~ [Hh][Pp][Cc] ]] ; then
+          echo "#SBATCH --constraint=hpcwork" >&9
+        fi
+        echo "#SBATCH --export=NONE" >&9
+      fi
+      if [[ "$user_email" =~ ^(|0|[Dd][Ee][Ff][Aa]?[Uu]?[Ll]?[Tt]?)$ ]] ; then
+        debug "No email address given, notifications will be sent to system default."
+      else
+        echo "#SBATCH --mail-user=$user_email" >&9
+      fi
+      echo "jobid=\"\${SLURM_JOB_ID}\"" >&9
     else
       fatal "Unrecognised queueing system '$queue'."
     fi

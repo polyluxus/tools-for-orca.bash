@@ -31,7 +31,7 @@ orca_scratch="default"
 # Define the overhead you'd like to give ORCA in MB 
 orca_overhead=2000
 #? The 2000 might be a very conservative guess, but additionally
-#? the memory will be scaled by (CPU + 1)/CPU (at least in the submit script).
+#? the memory will be scaled by 75% (at least in the submit script).
 #?
 # If a modular software management is available, use it?
 load_modules="true"
@@ -64,8 +64,8 @@ output_verbosity=0
 #
 # Default values for queueing system submission
 #
-# Select a queueing system (only bsub-gen) # TODO: bsub-rwth, pbs-gen, etc
-request_qsys="bsub-gen"
+# Select a queueing system pbs-gen (?), slurm-gen, bsub-gen, bsub-rwth, slurm-rwth
+request_qsys="slurm-rwth"
 # Walltime for remote execution, header line for the queueing system
 requested_walltime="24:00:00"
 # Specify a default value for the memory (MB)
@@ -74,10 +74,10 @@ requested_memory=512
 requested_numCPU=4
 # TODO: Limits disk space, not usre if avail for ORCA
 requested_maxdisk=10000
-# Account to project (currently only for bsub-rwth)
-bsub_project=default
+# Account to project (bsub), or account (slurm)
+qsys_project=default
 # E-Mail address to send notifications to
-bsub_email=default
+user_email=default
 # Calculations will be submitted to run (hold/keep)
 requested_submit_status="run"
 
