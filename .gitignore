@@ -5,3 +5,5 @@ examples
 **/.tmp*
 **/tmp.*
 **/core.*
+**/*.swp
+**/.nfs*
