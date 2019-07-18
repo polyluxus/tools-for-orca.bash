@@ -1,5 +1,9 @@
 # tools-for-orca.bash
 
-This are some simple scripts that shall help with the execution of ORCA.
+The intention of this repository is to provide some scripts
+which should help with the execution and submission of ORCA.
+
+Currently only a submission script is available,
+and it is pretty much tailored to the RWTH Cluster (CLAIX18).
 
 

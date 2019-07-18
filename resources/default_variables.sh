@@ -13,8 +13,8 @@ fi
 # Generic details about these tools 
 #
 softwarename="tools-for-orca.bash"
-version="0.0.3.alpha3"
-versiondate="2019-03-05"
+version="0.0.3"
+versiondate="2019-07-18"
 
 #
 # Standard commands for external software:
@@ -58,7 +58,10 @@ orca_output_suffix="log"
 #
 # Default options for printing (Not in use)
 #
-values_separator=" " # (space separated values)
+# Delimit values in the printout with "space" (default)/ "comma"/ "semicolon"/ "colon"/ "slash"/ "pipe" 
+values_delimiter="space" 
+#
+# Set the default print level, higher numbers mean more output
 output_verbosity=0
 
 #

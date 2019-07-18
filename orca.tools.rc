@@ -44,21 +44,24 @@ orca_output_suffix="log"
 #
 # Default options for printing (Not in use)
 #
-values_separator=" " # (space separated values)
+# Delimit values in the printout with "space" (default)/ "comma"/ "semicolon"/ "colon"/ "slash"/ "pipe" 
+values_delimiter="space" 
+#
+# Set the default print level, higher numbers mean more output
 output_verbosity=0
 
 #
 # Default values for queueing system submission
 #
-# Select a queueing system (only bsub-gen) # TODO: bsub-rwth, pbs-gen, etc
-request_qsys="bsub-gen"
+# Select a queueing system (supported: slurm, bsub; suffixed with -gen, -rwth) # TODO: pbs
+request_qsys="slurm-rwth"
 # Walltime for remote execution, header line for the queueing system
-requested_walltime="48:00:00"
+requested_walltime="120:00:00"
 # Specify a default value for the memory (MB)
-requested_memory=1024
+requested_memory=20000
 # This corresponds to nthreads/NProcShared (etc)
-requested_numCPU=4
-# TODO: Limits disk space, not usre if avail for ORCA
+requested_numCPU=20
+# TODO: Limits disk space, not sure if available for ORCA
 requested_maxdisk=10000
 # Account to project (currently only for bsub-rwth)
 qsys_project=default
