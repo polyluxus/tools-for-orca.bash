@@ -78,6 +78,7 @@ read_orca_input_file ()
   local testinputline testinputline_index
   local memory_set="false" nprocs_set="false"
   local memory_per_processor
+  local skip_next_line
   memory_per_processor=$(( requested_memory / requested_numCPU ))
   for testinputline_index in "${!read_input[@]}" ; do
     testinputline="${read_input[testinputline_index]}"
@@ -86,6 +87,16 @@ read_orca_input_file ()
     if [[ "$testinputline" =~ $pattern_comment ]] ; then
       # This is a comment, don't do anything with this line
       # Also skip further analysis
+      continue
+    fi
+    local pattern_end="[Ee][Nn][Dd]"
+    if [[ -n $skip_next_line ]] ; then
+      if [[ "$testinputline" =~ (^|[[:space:]]+)$pattern_end($|[[:space:]]+) ]] ; then
+        debug "Found terminating end block."
+        unset skip_next_line
+      fi
+      unset read_input[$testinputline_index]
+      debug "Ignoring: $testinputline"
       continue
     fi
     # Insert parsing functions here
@@ -104,9 +115,24 @@ read_orca_input_file ()
       read_input[$testinputline_index]="%maxcore $memory_per_processor"
       message "Applied '${read_input[testinputline_index]}' to inputfile."
       memory_set="true"
-    elif [[ "$testinputline" =~ ^[[:space:]]*(%.*)$ ]] ; then
+    elif [[ "$testinputline" =~ ^[[:space:]]*(%[^[:space:]]*)(.*)$ ]] ; then
+      local current_block="${BASH_REMATCH[1]}"
+      debug "Block input ($current_block): $testinputline"
       #Remove the pal block here (last one will be used so this is not critical)
-      debug "Block input: $testinputline"
+      local pattern_palblock='^[[:space:]]*%[Pp][Aa][Ll]'
+      if [[ "$testinputline" =~ $pattern_palblock ]] ; then
+        # If the line contains the end pattern, just skip it
+        message "Detected '%pal' block. It will be substituted by script values."
+        unset read_input[$testinputline_index]
+        [[ "$testinputline" =~ $pattern_end($|[[:space:]]+) ]] && continue
+        # otherwise skip the next line(s), too
+        skip_next_line=true
+        debug "Ignoring: $testinputline"
+        continue
+      fi
+    elif [[ -n $current_block ]] ; then
+      debug "Block input ($current_block): $testinputline"
+      [[ "$testinputline" =~ $pattern_end($|[[:space:]]+) ]] && unset current_block
     else
       debug "Not simple input: $testinputline"
     fi
