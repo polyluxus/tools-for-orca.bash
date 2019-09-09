@@ -1,19 +1,44 @@
 #! /bin/bash
 
-# ORCA 4 submission script
+###
 #
+# orca.submit.sh -- 
+#   a script to submit a ORCA 4 calculation to a queuing system
+# Copyright (C) 2019 Martin C Schwarzer
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+###
+
 # You might not want to make modifications here.
-# If you do improve it, I would be happy to learn about it.
-#
+# If you do improve the script, I would be happy to learn about it.
+
+### begin of script content ###
 
 # 
 # The help lines are distributed throughout the script and grepped for
 #
 #hlp   This script will sumbit an ORCA input file to the queueing system.
 #hlp   It is designed to work on the RWTH compute cluster in 
-#hlp   combination with the bsub queue.
+#hlp   combination with the slurm queueing system.
 #hlp
-#hlp   This software comes with absolutely no warrenty. None. Nada.
+#hlp   orca.submit.sh  Copyright (C) 2019  Martin C Schwarzer
+#hlp   This program comes with ABSOLUTELY NO WARRANTY; this is free software, 
+#hlp   and you are welcome to redistribute it under certain conditions; 
+#hlp   please see the license file distributed alongside this repository,
+#hlp   which is available when you type '${0##*/} license',
+#hlp   or at <https://github.com/polyluxus/tools-for-gamess.bash>.
 #hlp
 #hlp   Usage: $scriptname [options] [IPUT_FILE]
 #hlp
@@ -667,8 +692,11 @@ process_options ()
 # MAIN SCRIPT
 #
 
-# If this script is sourced, return before executing anything
-(( ${#BASH_SOURCE[*]} > 1 )) && return 0
+# If this script is not sourced, return before executing anything
+if (return 0 2>/dev/null) ; then
+  # [How to detect if a script is being sourced](https://stackoverflow.com/a/28776166/3180795)
+  echo "This script is not meant to be sourced; skipping execution."
+fi
 
 # Save how script was called
 script_invocation_spell="$0 $*"
@@ -693,6 +721,17 @@ else
 fi
 
 get_scriptpath_and_source_files || exit 1
+
+if [[ "$1" =~ ^[Ll][Ii][Cc][Ee][Nn][Ss][Ee]$ ]] ; then
+  [[ -r "$scriptpath/LICENSE" ]] || fatal "No license file found. Your copy of the repository might be corrupted."
+  if command -v less &> /dev/null ; then
+    less "$scriptpath/LICENSE"
+  else
+    cat "$scriptpath/LICENSE"
+  fi
+  message "Displayed license and will exit."
+  exit 0
+fi
 
 # Check for settings in three default locations (increasing priority):
 #   install path of the script, user's home directory, current directory
