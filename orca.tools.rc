@@ -1,5 +1,17 @@
 #!/bin/bash
 
+###
+#
+#  This file is part of tools-for-orca.bash
+#  Copyright (C) 2019  Martin C Schwarzer
+#  This program comes with ABSOLUTELY NO WARRANTY; this is free software,
+#  and you are welcome to redistribute it under certain conditions;
+#  please see the license file distributed alongside this repository,
+#  which should be available when you type 'orca.submit.sh license',
+#  or at <https://github.com/polyluxus/tools-for-orca.bash>.
+#
+###
+
 # You can modify this file for customisation
 
 #

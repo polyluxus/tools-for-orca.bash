@@ -1,7 +1,31 @@
 #!/bin/bash
 
+###
+#
+# This file is part of tools-for-orca.bash --
+#   a repository of scripts to prepare and submit ORCA 4 calculations 
+# Copyright (C) 2019 Martin C Schwarzer
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+###
+
 # If this script is not sourced, return before executing anything
-if (( ${#BASH_SOURCE[*]} == 1 )) ; then
+if (return 0 2>/dev/null) ; then
+  # [How to detect if a script is being sourced](https://stackoverflow.com/a/28776166/3180795)
+  : #Everything is fine
+else
   echo "This script is only meant to be sourced."
   exit 0
 fi
@@ -78,6 +102,7 @@ read_orca_input_file ()
   local testinputline testinputline_index
   local memory_set="false" nprocs_set="false"
   local memory_per_processor
+  local skip_next_line
   memory_per_processor=$(( requested_memory / requested_numCPU ))
   for testinputline_index in "${!read_input[@]}" ; do
     testinputline="${read_input[testinputline_index]}"
@@ -86,6 +111,16 @@ read_orca_input_file ()
     if [[ "$testinputline" =~ $pattern_comment ]] ; then
       # This is a comment, don't do anything with this line
       # Also skip further analysis
+      continue
+    fi
+    local pattern_end="[Ee][Nn][Dd]"
+    if [[ -n $skip_next_line ]] ; then
+      if [[ "$testinputline" =~ (^|[[:space:]]+)$pattern_end($|[[:space:]]+) ]] ; then
+        debug "Found terminating end block."
+        unset skip_next_line
+      fi
+      unset read_input[$testinputline_index]
+      debug "Ignoring: $testinputline"
       continue
     fi
     # Insert parsing functions here
@@ -104,9 +139,24 @@ read_orca_input_file ()
       read_input[$testinputline_index]="%maxcore $memory_per_processor"
       message "Applied '${read_input[testinputline_index]}' to inputfile."
       memory_set="true"
-    elif [[ "$testinputline" =~ ^[[:space:]]*(%.*)$ ]] ; then
+    elif [[ "$testinputline" =~ ^[[:space:]]*(%[^[:space:]]*)(.*)$ ]] ; then
+      local current_block="${BASH_REMATCH[1]}"
+      debug "Block input ($current_block): $testinputline"
       #Remove the pal block here (last one will be used so this is not critical)
-      debug "Block input: $testinputline"
+      local pattern_palblock='^[[:space:]]*%[Pp][Aa][Ll]'
+      if [[ "$testinputline" =~ $pattern_palblock ]] ; then
+        # If the line contains the end pattern, just skip it
+        message "Detected '%pal' block. It will be substituted by script values."
+        unset read_input[$testinputline_index]
+        [[ "$testinputline" =~ $pattern_end($|[[:space:]]+) ]] && continue
+        # otherwise skip the next line(s), too
+        skip_next_line=true
+        debug "Ignoring: $testinputline"
+        continue
+      fi
+    elif [[ -n $current_block ]] ; then
+      debug "Block input ($current_block): $testinputline"
+      [[ "$testinputline" =~ $pattern_end($|[[:space:]]+) ]] && unset current_block
     else
       debug "Not simple input: $testinputline"
     fi
